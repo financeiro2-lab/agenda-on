@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Agenda Financeira ON+ · Secretária Executiva</title>
+<title>Agenda Financeira ON+</title>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -593,8 +593,65 @@ function AgendaON() {
 }
 
 
+
+function LoginScreen({ onLogin }) {
+  const [val, setVal] = React.useState('');
+  const [erro, setErro] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
+
+  async function hashStr(str) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  async function tentar() {
+    setLoading(true);
+    const h = await hashStr(val.replace(/\D/g, ''));
+    if (h === '12e792c2a8b4f05b2cb5ce8c914da3421815d3232f5b1e10b9481435d0315021') {
+      sessionStorage.setItem('agendaON_auth', h);
+      onLogin();
+    } else {
+      setErro(true);
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div style={{minHeight:'100vh',background:'#F7F8FA',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:"system-ui,-apple-system,sans-serif"}}>
+      <div style={{background:'#fff',border:'1px solid #E4E7EC',borderRadius:16,padding:'40px 36px',width:'100%',maxWidth:380,boxShadow:'0 4px 24px rgba(0,0,0,.07)'}}>
+        <div style={{fontSize:11,letterSpacing:'.16em',textTransform:'uppercase',color:'#1D6F42',fontWeight:700,marginBottom:8}}>Secretária Executiva · ON+</div>
+        <h1 style={{fontSize:24,fontWeight:700,letterSpacing:'-.02em',margin:'0 0 6px',color:'#101828'}}>Agenda Financeira</h1>
+        <p style={{fontSize:14,color:'#6B7280',margin:'0 0 28px'}}>Acesso restrito · ONSAÚDE</p>
+        <input
+          type="password"
+          value={val}
+          onChange={e=>{setVal(e.target.value);setErro(false);}}
+          onKeyDown={e=>e.key==='Enter'&&tentar()}
+          placeholder="Digite sua senha"
+          style={{width:'100%',padding:'11px 14px',borderRadius:8,border:`1.5px solid ${erro?'#D92D20':'#E4E7EC'}`,fontSize:15,outline:'none',boxSizing:'border-box',marginBottom:8,color:'#101828',background:'#F7F8FA'}}
+          autoFocus
+        />
+        {erro && <p style={{fontSize:13,color:'#D92D20',margin:'0 0 10px'}}>Senha incorreta. Tente novamente.</p>}
+        <button onClick={tentar} disabled={loading||!val} style={{width:'100%',padding:'12px',borderRadius:8,border:'none',background:val&&!loading?'#1D6F42':'#98A2B3',color:'#fff',fontWeight:700,fontSize:15,cursor:val&&!loading?'pointer':'not-allowed',transition:'all .15s'}}>
+          {loading ? 'Verificando...' : 'Entrar'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const [auth, setAuth] = React.useState(() => {
+    const h = sessionStorage.getItem('agendaON_auth');
+    return h === '12e792c2a8b4f05b2cb5ce8c914da3421815d3232f5b1e10b9481435d0315021';
+  });
+  if (!auth) return <LoginScreen onLogin={() => setAuth(true)} />;
+  return <AgendaON />;
+}
+
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<AgendaON />);
+root.render(<App />);
 </script>
 </body>
 </html>
