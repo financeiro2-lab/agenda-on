@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agenda Financeira ON+ · Secretária Executiva</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #F7F8FA; }
+  input, button { font-family: inherit; }
+  input::placeholder { color: #98A2B3; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState } = React;
+
+
+const C = {
+  bg:"#FFFFFF", surface:"#F7F8FA", card:"#FFFFFF",
+  border:"#E4E7EC", border2:"#CBD2DA",
+  ink:"#101828", soft:"#475467", muted:"#98A2B3",
+  accent:"#1D6F42", accentBg:"rgba(29,111,66,.08)", accentLight:"rgba(29,111,66,.12)",
+  red:"#D92D20", redBg:"rgba(217,45,32,.08)",
+  yellow:"#B54708", yellowBg:"rgba(181,71,8,.08)",
+  green:"#027A48", greenBg:"rgba(2,122,72,.08)",
+  blue:"#1570EF", blueBg:"rgba(21,112,239,.08)",
+  purple:"#6941C6", purpleBg:"rgba(105,65,198,.08)",
+  orange:"#C4320A", orangeBg:"rgba(196,50,10,.08)",
+};
+
+const PRIO = {
+  urgente:{ label:"Urgente",      emoji:"🔴", color:C.red,    bg:C.redBg    },
+  medio:  { label:"Médio",        emoji:"🟡", color:C.yellow, bg:C.yellowBg },
+  esperar:{ label:"Pode esperar", emoji:"🟢", color:C.green,  bg:C.greenBg  },
+};
+const SRC_MAP = {
+  slack:    { label:"Slack",    color:C.purple, bg:C.purpleBg },
+  whatsapp: { label:"WhatsApp", color:C.green,  bg:C.greenBg  },
+  gmail:    { label:"Gmail",    color:C.blue,   bg:C.blueBg   },
+  omie:     { label:"Omie",     color:C.accent, bg:C.accentBg },
+  calendar: { label:"Agenda",   color:C.blue,   bg:C.blueBg   },
+  manual:   { label:"Manual",   color:C.soft,   bg:"rgba(0,0,0,.05)" },
+};
+
+/* ─── DADOS REAIS · TRIAGEM 17/06/2026 09h ─────────────────── */
+const DEMANDS = [
+  // ── SLACK ──
+  { id:"s1",  new:false, txt:"Restante da folha — já acordado com a Gerente Financeira. Soraya pediu em 12/06.", from:"Soraya", chan:"#_contas-a-pagar-onsaúde", prio:"urgente", src:"slack", resp:"Harysson", done:false },
+  { id:"s2",  new:false, txt:"PIX R$ 509,15 — uniformes novos colaboradores — Éfima Uniformes · CPF 425.568.482-00 · salomaoefima@yahoo.com.br", from:"Marília", chan:"#_contas-a-pagar-onsaúde", prio:"urgente", src:"slack", resp:"Harysson", done:false },
+  { id:"s3",  new:false, txt:"PIX R$ 5.000 — móveis planejados (parte da entrega) — ISP Móveis · CPF 286.796.952-20 · ispmoveisplanejados@gmail.com", from:"Marília", chan:"#_contas-a-pagar-onsaúde", prio:"urgente", src:"slack", resp:"Harysson", done:false },
+  { id:"s4",  new:false, txt:"PIX R$ 1.942 — material elétrico + mão de obra reforma escritório — Lenílson · cel. 91 99230-5564", from:"Marília", chan:"#_contas-a-pagar-onsaúde", prio:"urgente", src:"slack", resp:"Harysson", done:false },
+  { id:"s5",  new:false, txt:"Boleto combustível viagem ação varizes Maranhão (LF) — PAGAR HOJE", from:"Marília", chan:"#_contas-a-pagar-lf", prio:"urgente", src:"slack", resp:"Kiev", done:false },
+  { id:"s6",  new:false, txt:"Folha Capanema competência MARÇO — aguardando pagamento (LF, pedido 05/06)", from:"Analista DP", chan:"#_contas-a-pagar-lf", prio:"urgente", src:"slack", resp:"Kiev", done:false },
+  { id:"s7",  new:false, txt:"PIX R$ 940 — 50% placa patrocínio Future no CT Paysandu — Mídia Mais CNPJ 50.143.975/0001-47 · mpamerico@gmail.com", from:"Maria Paula", chan:"#_contas-a-pagar-onsaúde", prio:"medio", src:"slack", resp:"Harysson", done:false },
+  { id:"s8",  new:false, txt:"PIX R$ 1.000 — visita técnica AGSUS RN (Jhennifer Alexandrine · CPF 610.126.892-04 · 91 98917-0858) — LF", from:"Marília", chan:"#_contas-a-pagar-lf", prio:"medio", src:"slack", resp:"Kiev", done:false },
+  { id:"s9",  new:false, txt:"Fatura aluguel auditório Torre Infinito (evento 28/03) — COMPROMISSO: pagar amanhã 18/06 · Harysson em cópia", from:"Marília / email", chan:"#_contas-a-pagar-onsaúde", prio:"urgente", src:"slack", resp:"Harysson", done:false },
+  { id:"s10", new:false, txt:"Comprovante estorno Dr. Sérgio Max (recebeu a maior) — Katiussya enviou comprovante", from:"Katiussya", chan:"#_contas-a-pagar-onsaúde", prio:"esperar", src:"slack", resp:"Harysson", done:false },
+  // ── GMAIL (novas de hoje) ──
+  { id:"g1",  new:true,  txt:"⚠️ CONVOCAÇÃO SESMA — Reunião sobre Hospital Geral de Mosqueiro (DAS/SESMA). Recebido 16/06 às 19h25. Verificar data/hora e confirmar presença.", from:"dassesma2025@gmail.com", chan:"Gmail", prio:"urgente", src:"gmail", resp:"Lari", done:false },
+  { id:"g2",  new:true,  txt:"NF Produção RA Teleradiologia — Ana Flávia Arrares Fialka · competência Março/2026. Solicitação de emissão de NF. Área de faturamento — responsabilidade sua.", from:"flaviabarraes@gmail.com", chan:"Gmail", prio:"medio", src:"gmail", resp:"Lari", done:false },
+  { id:"g3",  new:true,  txt:"Relatório Recebimentos Omie (gerado 16/06 às 15h48) — disponível para download somente até 19/06 (sexta). Baixar antes de vencer.", from:"Omie", chan:"Gmail · Omie", prio:"medio", src:"omie", resp:"Lari", done:false },
+  { id:"g4",  new:true,  txt:"Fatura Condomínio Torre Infinito — boleto encaminhado por contato@ em 15/06. Verificar valor e vencimento para lançamento.", from:"contato@gestaoonsaude.com", chan:"Gmail", prio:"medio", src:"gmail", resp:"Harysson", done:false },
+  { id:"g5",  new:true,  txt:"Dr. Gabriel Paixão compartilhou pasta 'Empresa - Neocardio' no Drive com financeiro2@ e financeiro@ (15/06). Verificar o que está sendo solicitado — provável relação com os impostos do WhatsApp.", from:"Dr. Gabriel Paixão", chan:"Gmail · Drive", prio:"medio", src:"gmail", resp:"Lari", done:false },
+  { id:"g6",  new:true,  txt:"Fatura Bom Controle disponível (encaminhada 15/06 por contato@). Verificar valor e vencimento.", from:"contato@gestaoonsaude.com", chan:"Gmail", prio:"medio", src:"gmail", resp:"Harysson", done:false },
+  // ── WHATSAPP (sessão anterior) ──
+  { id:"w1",  new:false, txt:"Aluguel sala Tiradentes — PIX 91 98713-5748 (Michelle Ferro). App Itaú com problema, pagar via Nubank.", from:"Marília Corrêa", chan:"WhatsApp", prio:"urgente", src:"whatsapp", resp:"Harysson", done:false },
+  { id:"w2",  new:false, txt:"Estorno Ian Souza — Kiev pediu CPF+PIX a Lucas Eng. Aguardando retorno de Lucas.", from:"Kiev → Lucas Eng", chan:"WhatsApp · FINANCEIRO-FUTURE", prio:"medio", src:"whatsapp", resp:"Kiev", done:false },
+  { id:"w3",  new:false, txt:"Conciliação Inter — lançamentos sem ID: Andrade E Cia, Filipe Marcel, Distrib. Energia. Lucas confirmou: valores de Uber.", from:"Kiev", chan:"WhatsApp · FINANCEIRO-FUTURE", prio:"medio", src:"whatsapp", resp:"Kiev", done:false },
+  { id:"w4",  new:false, txt:"Dr. Gabriel Paixão pede valor dos impostos (parte dele + Lucas ÷ 2). Aguarda retorno de Dr. Fialka.", from:"Dr. Gabriel Paixão", chan:"WhatsApp", prio:"medio", src:"whatsapp", resp:"Lari", done:false },
+  { id:"w5",  new:false, txt:"André Martha — link do BI enviado (bifingrupoon.lovable.app).", from:"André Martha", chan:"WhatsApp", prio:"esperar", src:"whatsapp", resp:"—", done:true },
+  // ── OMIE ──
+  { id:"o1",  new:false, txt:"Omie OnSaúde — Resumo Executivo de Finanças disponível hoje (posição 17/06). Conferir posição financeira.", from:"Omie", chan:"Omie · OnSaúde", prio:"medio", src:"omie", resp:"Lari", done:false },
+  { id:"o2",  new:false, txt:"Omie LF — conferir títulos a vencer: Mãe do Rio, Capanema, Sta Teresinha, Sta Maria do Pará.", from:"Omie", chan:"Omie · LF", prio:"medio", src:"omie", resp:"Kiev", done:false },
+];
+
+const TODAY_EVENTS = [
+  { time:"07:00–07:30", label:"🧘 Meditação matinal", color:"#12B76A" },
+  { time:"09:00",       label:"☕ Triagem + briefing (Slack · Gmail · Agenda · Omie)", color:C.accent },
+  { time:"13:00",       label:"⏰ Bater ponto — saída almoço", color:C.yellow },
+  { time:"13:00–14:00", label:"🍽️ Almoço — parar de verdade", color:"#12B76A" },
+];
+
+const WEEK = [
+  { day:"Qua 17 · HOJE", today:true, alert:null, items:[
+    "🧘 Meditação 07h","☕ Triagem 09h","🍽️ Almoço 13h",
+    "Sem contas a pagar — dia livre para gestão"
+  ]},
+  { day:"Qui 18", today:false, alert:"⚠️ Aluguel Torre Infinito vence hoje!", items:[
+    "💰 FGTS OnSaúde (dia todo)",
+    "DDA BTG · 1 boleto ONSAÚDE · 09h",
+    "💳 Fonseca Reformas R$ 2.329,14 · 10h–10h30",
+    "Pagar aluguel carro Édipo R$ 2.300 · 11h",
+    "🧘 Meditação 07h | 🍽️ Almoço 13h"
+  ]},
+  { day:"Sex 19", today:false, alert:"⚠️ CONFLITO 10h: Contas a pagar vs Review Financeiro", items:[
+    "💳 LF FGTS (dia todo)",
+    "4× DDA BTG · ONSAÚDE · 09h",
+    "💳 5 pgtos R$ 26.533,41 · 10h–10h30 ⚠️",
+    "Review Financeiro (Lucas Fialka + Lelis) · 10h–11h ⚠️",
+    "🧘 Meditação 07h | 🍽️ Almoço 13h"
+  ]},
+  { day:"Sáb 20 (venc.)", today:false, alert:null, items:[
+    "3× DDA BTG · 09h",
+    "💳 4 pgtos R$ 39.688,16 · 10h–10h30",
+    "J.Jacob R$ 28.805 + Botelho&Castro R$ 9.333 + Omie R$ 99 + Ed Carlos R$ 1.450"
+  ]},
+];
+
+const BILLS = [
+  { date:"16/06 · ter",        done:true,  total:"R$ 22.032,63", items:[["Banco Bradesco S.A.","R$ 22.032,63","Dir. Executiva"]] },
+  { date:"18/06 · qui",        done:false, total:"R$ 2.329,14",  items:[
+    ["Fonseca Reformas e Construções Ltda.","R$ 2.329,14","Escritório"],
+    ["Torre Infinito · aluguel auditório (28/03)","a confirmar","Escritório — ⚠️ vence hoje"],
+  ]},
+  { date:"19/06 · sex",        done:false, total:"R$ 26.533,41", items:[
+    ["FGTS","R$ 217,84","Escritório"],
+    ["Min. Fazenda","R$ 977,72","Escritório"],
+    ["FGTS","R$ 3.802,23","Adm/Logística"],
+    ["Edipo Alves Lod","R$ 2.300,00","Escritório"],
+    ["Min. Fazenda","R$ 19.235,62","Escritório"],
+  ]},
+  { date:"20/06 · sáb (venc.)",done:false, total:"R$ 39.688,16", items:[
+    ["Omiexperience Ltda.","R$ 99,00","Escritório"],
+    ["J. Jacob Adm. de Imóveis","R$ 28.805,83","Adm/Logística"],
+    ["Botelho & Castro Advogados","R$ 9.333,33","Jurídico"],
+    ["Ed Carlos Rodrigues de Souza","R$ 1.450,00","Serv. Prestados"],
+  ]},
+];
+
+const TEAM = [
+  { cls:"lari",  name:"Lari — Larissa Albuquerque", role:"Gerente Financeira",
+    scope:"ONSAÚDE · Future Medical · LF", scopeBg:C.accentBg, scopeInk:C.accent, border:C.accent,
+    items:[
+      { bold:true,  text:"Gestão integral e exclusiva do faturamento e contas a receber" },
+      { text:"Gestão estratégica do setor financeiro (ONSAÚDE, Future, LF)" },
+      { bold:true,  text:"Apoio total à diretoria — recomendações, não análises" },
+      { text:"Melhoria e automação de processos; relatórios gerenciais à diretoria" },
+      { bold:true,  text:"Não executa mais atividades operacionais — delega com critério" },
+    ]},
+  { cls:"hary", name:"Harysson", role:"Analista Financeiro",
+    scope:"100% ONSAÚDE", scopeBg:C.blueBg, scopeInk:C.blue, border:C.blue,
+    items:[
+      { text:"Conciliações bancárias da ONSAÚDE (Bradesco, BTG Pactual)" },
+      { text:"NFSe e folha de pagamento da ONSAÚDE" },
+      { text:"Análise de divergências e critérios de aceitação" },
+      { text:"Suporte ao fechamento mensal da ONSAÚDE" },
+      { text:"Absorção de ~20h/semana de execução transferidas da Lari" },
+    ]},
+  { cls:"kiev", name:"Kiev", role:"Auxiliar Financeiro · em treinamento",
+    scope:"Future Medical · LF", scopeBg:C.purpleBg, scopeInk:C.purple, border:C.purple,
+    items:[
+      { bold:true, text:"Conciliações bancárias da LF e Future Medical" },
+      { text:"LF = Mãe do Rio, Capanema, Hosp. Santa Teresinha, Santa Maria do Pará" },
+      { text:"Rotinas do manual sob supervisão (10 principais)" },
+      { text:"Cadastro e lançamentos no Omie (LF e Future)" },
+      { text:"Suporte ao Harysson nas demandas da ONSAÚDE" },
+    ]},
+];
+
+/* ─── HELPERS ────────────────────────────────────────────────── */
+function Badge({ color, bg, children, border }) {
+  return <span style={{ fontSize:10, fontWeight:700, letterSpacing:".06em", textTransform:"uppercase",
+    color, background:bg, borderRadius:5, padding:"2px 7px", whiteSpace:"nowrap",
+    border:`1px solid ${border||color}22` }}>{children}</span>;
+}
+function Ck({ checked, onChange }) {
+  return <button onClick={onChange} style={{ width:22, height:22, borderRadius:6, padding:0,
+    flexShrink:0, marginTop:1, border:`2px solid ${checked?C.accent:C.border2}`,
+    background:checked?C.accent:"#fff", cursor:"pointer",
+    display:"flex", alignItems:"center", justifyContent:"center", transition:"all .15s" }}>
+    {checked && <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+      stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12"/></svg>}
+  </button>;
+}
+
+/* ─── APP ────────────────────────────────────────────────────── */
+function AgendaON() {
+  const [tab, setTab]         = useState("hoje");
+  const [filter, setFilter]   = useState("all");
+  const [demands, setDemands] = useState(() => JSON.parse(JSON.stringify(DEMANDS)));
+  const [addOpen, setAddOpen] = useState(false);
+  const [fText, setFText]     = useState("");
+  const [fFrom, setFFrom]     = useState("");
+  const [fPrio, setFPrio]     = useState("medio");
+  const [fSrc,  setFSrc]      = useState("manual");
+  const [fResp, setFResp]     = useState("Lari");
+
+  const urgentes = demands.filter(x=>!x.done&&x.prio==="urgente").length;
+  const medias   = demands.filter(x=>!x.done&&x.prio==="medio").length;
+  const feitas   = demands.filter(x=>x.done).length;
+  const novas    = demands.filter(x=>!x.done&&x.new).length;
+
+  const filtered = demands.filter(x=>{
+    if(filter==="done")    return x.done;
+    if(filter==="novas")   return !x.done&&x.new;
+    if(filter==="all")     return !x.done;
+    if(filter==="hary")    return !x.done&&x.resp==="Harysson";
+    if(filter==="kiev")    return !x.done&&x.resp==="Kiev";
+    if(filter==="lari")    return !x.done&&x.resp==="Lari";
+    return !x.done&&x.prio===filter;
+  }).sort((a,b)=>({urgente:0,medio:1,esperar:2}[a.prio]||3)-({urgente:0,medio:1,esperar:2}[b.prio]||3));
+
+  const toggle = id => setDemands(ds=>ds.map(x=>x.id===id?{...x,done:!x.done}:x));
+
+  const addTask = () => {
+    if(!fText.trim()) return;
+    setDemands(ds=>[...ds,{ id:"m"+Date.now(), txt:fText.trim(),
+      from:fFrom.trim()||"Lari", chan:SRC_MAP[fSrc]?.label||"Manual",
+      prio:fPrio, src:fSrc, resp:fResp, done:false, new:true }]);
+    setFText(""); setFFrom(""); setAddOpen(false);
+  };
+
+  /* style helpers */
+  const tabBtn = (id,label,badge)=>(
+    <button key={id} onClick={()=>setTab(id)} style={{
+      padding:"7px 14px", borderRadius:8, border:"none", cursor:"pointer",
+      fontFamily:"inherit", fontSize:13, fontWeight:tab===id?700:500,
+      background:tab===id?C.accent:"transparent",
+      color:tab===id?"#fff":C.soft, display:"flex", alignItems:"center", gap:6
+    }}>{label}{badge?<span style={{background:"#fff",color:C.accent,fontSize:10,fontWeight:700,borderRadius:999,padding:"1px 6px"}}>{badge}</span>:null}</button>
+  );
+
+  const fbtn = (f,label)=>(
+    <button key={f} onClick={()=>setFilter(f)} style={{
+      padding:"5px 10px", borderRadius:6, cursor:"pointer", fontFamily:"inherit",
+      border:`1px solid ${filter===f?C.accent:C.border}`,
+      background:filter===f?C.accentBg:"#fff",
+      color:filter===f?C.accent:C.soft, fontSize:12, fontWeight:filter===f?700:400
+    }}>{label}</button>
+  );
+
+  const optBtn = (val,label,cur,set)=>(
+    <button key={val} onClick={()=>set(val)} style={{
+      padding:"4px 10px", borderRadius:6, cursor:"pointer", fontFamily:"inherit",
+      border:`1px solid ${cur===val?C.accent:C.border}`,
+      background:cur===val?C.accentBg:"#fff",
+      color:cur===val?C.accent:C.soft, fontSize:12, fontWeight:cur===val?700:400
+    }}>{label}</button>
+  );
+
+  const sec = (t,mt=0)=><p style={{fontSize:12,fontWeight:700,letterSpacing:".07em",
+    textTransform:"uppercase",color:C.muted,marginBottom:10,marginTop:mt}}>{t}</p>;
+
+  const inp = (val,set,ph,full)=><input value={val} onChange={e=>set(e.target.value)}
+    placeholder={ph} style={{background:C.surface,border:`1px solid ${C.border}`,
+    borderRadius:8,padding:"9px 12px",color:C.ink,fontSize:14,fontFamily:"inherit",
+    width:full?"100%":"auto",outline:"none",boxSizing:"border-box"}}/>;
+
+  const alertBar = (msg)=> msg ? (
+    <div style={{display:"flex",alignItems:"center",gap:10,padding:"9px 14px",
+      borderRadius:8,background:C.redBg,border:`1px solid ${C.red}33`,
+      fontSize:13,color:C.red,fontWeight:500,marginBottom:6}}>
+      {msg}
+    </div>
+  ) : null;
+
+  return (
+    <div style={{background:C.surface,color:C.ink,minHeight:"100vh",
+      fontFamily:"system-ui,-apple-system,'Segoe UI',Roboto,sans-serif",
+      fontSize:16,lineHeight:1.5,WebkitFontSmoothing:"antialiased"}}>
+      <div style={{maxWidth:1040,margin:"0 auto",padding:"24px 16px 72px"}}>
+
+        {/* HEADER */}
+        <div style={{marginBottom:18}}>
+          <div style={{fontSize:11,letterSpacing:".16em",textTransform:"uppercase",
+            color:C.accent,fontWeight:700,marginBottom:5}}>Secretária Executiva · ON+</div>
+          <h1 style={{margin:0,fontSize:"clamp(22px,5vw,30px)",fontWeight:700,
+            letterSpacing:"-.02em",lineHeight:1.1}}>Quarta-feira, 17 de junho</h1>
+          <p style={{margin:"5px 0 0",color:C.soft,fontSize:14}}>
+            Briefing · 09h05 · Slack + Gmail + Omie + Google Agenda · financeiro2@gestaoonsaude.com
+          </p>
+        </div>
+
+        {/* TRIAGEM BAR */}
+        <div style={{background:"#fff",border:`1px solid ${C.border}`,
+          borderLeft:`4px solid ${C.accent}`,borderRadius:12,
+          padding:"13px 16px",marginBottom:16}}>
+          <div style={{display:"flex",justifyContent:"space-between",
+            alignItems:"center",gap:10,flexWrap:"wrap"}}>
+            <span style={{fontSize:12,letterSpacing:".05em",textTransform:"uppercase",
+              color:C.soft,fontWeight:700}}>Triagem do dia · 4 fontes · última varredura 09h05</span>
+            {novas>0&&<span style={{fontSize:12,fontWeight:700,color:C.red,
+              background:C.redBg,borderRadius:999,padding:"2px 10px"}}>
+              🔴 {novas} nova{novas>1?"s":""} hoje
+            </span>}
+          </div>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:10}}>
+            {[["Slack · MCP",C.purple,true],["Gmail",C.blue,true],
+              ["Omie · OnSaúde + LF",C.accent,true],
+              ["WhatsApp Web · Chrome",C.muted,false]].map(([s,c,ok])=>(
+              <span key={s} style={{display:"flex",alignItems:"center",gap:7,fontSize:13,
+                background:C.surface,border:`1px solid ${C.border}`,
+                borderRadius:999,padding:"5px 12px",color:ok?C.soft:C.muted,
+                opacity:ok?1:.6}}>
+                <span style={{width:8,height:8,borderRadius:"50%",
+                  background:ok?c:C.muted,flexShrink:0}}/>
+                {s}{!ok&&<span style={{fontSize:10,color:C.muted}}>· offline</span>}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* STATS */}
+        <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:18}}>
+          {[["Urgentes",urgentes,C.red,C.redBg],["Médias",medias,C.yellow,C.yellowBg],
+            ["Novas hoje",novas,C.blue,C.blueBg],["Feitas",feitas,C.green,C.greenBg]
+          ].map(([l,v,c,bg])=>(
+            <div key={l} style={{flex:1,minWidth:90,background:bg,
+              border:`1px solid ${c}33`,borderRadius:12,padding:"13px 16px"}}>
+              <div style={{fontSize:26,fontWeight:700,color:c,lineHeight:1}}>{v}</div>
+              <div style={{fontSize:11,color:c,marginTop:5,opacity:.8,
+                letterSpacing:".04em",textTransform:"uppercase"}}>{l}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* TABS */}
+        <div style={{display:"flex",gap:4,background:"#fff",
+          border:`1px solid ${C.border}`,borderRadius:12,
+          padding:4,width:"fit-content",marginBottom:20,flexWrap:"wrap"}}>
+          {tabBtn("hoje","Hoje")}
+          {tabBtn("semana","Semana")}
+          {tabBtn("contas","Contas a pagar")}
+          {tabBtn("equipe","Equipe")}
+        </div>
+
+        {/* ══ HOJE ══ */}
+        {tab==="hoje"&&(
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+            {/* col esq */}
+            <div>
+              {sec("📅 Agenda de hoje")}
+              {TODAY_EVENTS.map(e=>(
+                <div key={e.time} style={{display:"flex",gap:12,alignItems:"center",
+                  padding:"10px 14px",borderRadius:9,background:"#fff",
+                  border:`1px solid ${C.border}`,borderLeft:`4px solid ${e.color}`,
+                  marginBottom:7}}>
+                  <span style={{fontSize:12,color:C.muted,whiteSpace:"nowrap",
+                    minWidth:92,fontFamily:"ui-monospace,monospace"}}>{e.time}</span>
+                  <span style={{fontSize:14}}>{e.label}</span>
+                </div>
+              ))}
+
+              {sec("⚠️ Alertas da semana",22)}
+              {[
+                {c:C.red,   t:"Qui 18 — Aluguel Torre Infinito compromisso de pagar amanhã. Harysson em cópia."},
+                {c:C.red,   t:"Sex 19 — CONFLITO 10h: Contas a pagar R$ 26.533 vs Review Financeiro (Lucas + Lelis). Resolver hoje."},
+                {c:C.red,   t:"SESMA — Convocação para reunião Hospital Mosqueiro. Abrir email e confirmar presença."},
+                {c:C.yellow,t:"Sex 19 — Relatório Recebimentos Omie expira 19/06. Baixar antes de sexta."},
+              ].map((a,i)=>(
+                <div key={i} style={{display:"flex",gap:10,padding:"9px 13px",
+                  borderRadius:8,background:a.c===C.red?C.redBg:C.yellowBg,
+                  border:`1px solid ${a.c}33`,fontSize:13,color:a.c,
+                  fontWeight:500,marginBottom:6,lineHeight:1.4}}>{a.t}</div>
+              ))}
+
+              {sec("🔗 Fontes monitoradas",22)}
+              {[
+                {n:"#_contas-a-pagar-onsaúde",m:"5 pendentes",  c:C.purple},
+                {n:"#_contas-a-pagar-lf",     m:"3 pendentes",  c:C.purple},
+                {n:"#financeiro-equipe",       m:"ver canal",    c:C.purple},
+                {n:"📱 WhatsApp Web · Chrome",  m:"offline hoje", c:C.muted },
+                {n:"✉️ Gmail",                  m:"7 novas",      c:C.blue  },
+                {n:"🧾 Omie OnSaúde + LF",      m:"2 conferir",   c:C.accent},
+              ].map(ch=>(
+                <div key={ch.n} style={{display:"flex",justifyContent:"space-between",
+                  alignItems:"center",padding:"8px 12px",borderRadius:7,
+                  background:"#fff",border:`1px solid ${C.border}`,
+                  fontSize:13,marginBottom:5}}>
+                  <span style={{color:ch.c,fontWeight:500}}>{ch.n}</span>
+                  <span style={{color:C.muted,fontSize:11}}>{ch.m}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* col dir — demandas */}
+            <div>
+              <div style={{display:"flex",justifyContent:"space-between",
+                alignItems:"flex-start",marginBottom:10,flexWrap:"wrap",gap:6}}>
+                {sec(`📋 Demandas (${filtered.length})`)}
+                <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+                  {fbtn("all","Todas")}
+                  {fbtn("novas","🆕")}
+                  {fbtn("urgente","🔴")}
+                  {fbtn("medio","🟡")}
+                  {fbtn("esperar","🟢")}
+                  {fbtn("hary","Hary")}
+                  {fbtn("kiev","Kiev")}
+                  {fbtn("lari","Lari")}
+                  {fbtn("done","✅")}
+                </div>
+              </div>
+
+              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                {filtered.length===0&&(
+                  <p style={{color:C.muted,fontSize:14,textAlign:"center",padding:20}}>
+                    {filter==="done"?"Nenhuma concluída ainda.":"Nenhuma pendente neste filtro."}
+                  </p>
+                )}
+                {filtered.map(dm=>{
+                  const p=PRIO[dm.prio], s=SRC_MAP[dm.src]||SRC_MAP.manual;
+                  return (
+                    <div key={dm.id} style={{display:"grid",gridTemplateColumns:"22px 1fr",
+                      gap:12,alignItems:"flex-start",padding:"13px 15px",borderRadius:10,
+                      background:dm.done?"transparent":"#fff",
+                      border:`1px solid ${dm.done?C.border:dm.new?"#1570EF":C.border2}`,
+                      opacity:dm.done?.5:1,transition:"all .2s",
+                      boxShadow:dm.new&&!dm.done?"0 0 0 2px rgba(21,112,239,.12)":"none"}}>
+                      <Ck checked={dm.done} onChange={()=>toggle(dm.id)}/>
+                      <div>
+                        <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:6}}>
+                          {dm.new&&!dm.done&&<Badge color={C.blue} bg={C.blueBg}>🆕 NOVO</Badge>}
+                          <Badge color={p.color} bg={p.bg}>{p.emoji} {p.label}</Badge>
+                          <Badge color={s.color} bg={s.bg}>{s.label}</Badge>
+                          {dm.resp&&dm.resp!=="—"&&<Badge color={C.soft} bg="rgba(0,0,0,.04)">{dm.resp}</Badge>}
+                        </div>
+                        <div style={{fontSize:14,lineHeight:1.5,
+                          color:dm.done?C.muted:C.ink,
+                          textDecoration:dm.done?"line-through":"none",
+                          textDecorationColor:C.muted}}>{dm.txt}</div>
+                        <div style={{fontSize:12,color:C.muted,marginTop:5}}>
+                          {dm.from} · {dm.chan}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {!addOpen?(
+                  <button onClick={()=>setAddOpen(true)} style={{width:"100%",
+                    padding:14,borderRadius:10,background:"#fff",
+                    border:`1.5px dashed ${C.border2}`,color:C.muted,
+                    fontSize:14,fontWeight:500,cursor:"pointer",fontFamily:"inherit",
+                    display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+                    <span style={{fontSize:20,lineHeight:1}}>+</span> Adicionar tarefa
+                  </button>
+                ):(
+                  <div style={{background:"#fff",border:`1.5px solid ${C.accent}`,
+                    borderRadius:10,padding:16,display:"flex",flexDirection:"column",gap:10}}>
+                    {inp(fText,setFText,"Descreva a demanda...",true)}
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                      {inp(fFrom,setFFrom,"De quem?",true)}
+                      {inp(fResp,setFResp,"Responsável (Lari/Hary/Kiev)",true)}
+                    </div>
+                    <div>
+                      <span style={{fontSize:11,color:C.muted,display:"block",marginBottom:5}}>Prioridade</span>
+                      <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                        {optBtn("urgente","🔴 Urgente",fPrio,setFPrio)}
+                        {optBtn("medio","🟡 Médio",fPrio,setFPrio)}
+                        {optBtn("esperar","🟢 Pode esperar",fPrio,setFPrio)}
+                      </div>
+                    </div>
+                    <div>
+                      <span style={{fontSize:11,color:C.muted,display:"block",marginBottom:5}}>Fonte</span>
+                      <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                        {["slack","whatsapp","gmail","omie","manual"].map(s=>optBtn(s,SRC_MAP[s].label,fSrc,setFSrc))}
+                      </div>
+                    </div>
+                    <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+                      <button onClick={()=>setAddOpen(false)} style={{padding:"8px 16px",
+                        borderRadius:8,border:`1px solid ${C.border}`,background:"#fff",
+                        color:C.soft,cursor:"pointer",fontSize:13,fontFamily:"inherit"}}>
+                        Cancelar
+                      </button>
+                      <button onClick={addTask} style={{padding:"8px 20px",borderRadius:8,
+                        border:"none",background:C.accent,color:"#fff",fontWeight:700,
+                        cursor:"pointer",fontSize:13,fontFamily:"inherit"}}>
+                        Incluir
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ══ SEMANA ══ */}
+        {tab==="semana"&&(
+          <div>
+            {sec("Visão da semana · 17–20/06")}
+            {WEEK.map(w=>(
+              <div key={w.day} style={{borderRadius:10,marginBottom:10,overflow:"hidden",
+                border:`1px solid ${w.today?C.accent:C.border}`,
+                borderLeft:`4px solid ${w.today?C.accent:w.alert?C.red:C.border2}`}}>
+                <div style={{padding:"10px 16px",background:w.today?C.accentBg:"#fff"}}>
+                  <div style={{fontSize:13,fontWeight:700,
+                    color:w.today?C.accent:w.alert?C.red:C.blue}}>{w.day}</div>
+                  {w.alert&&<div style={{fontSize:12,color:C.red,marginTop:3,fontWeight:600}}>{w.alert}</div>}
+                </div>
+                <div style={{padding:"8px 16px 12px",background:"#fff"}}>
+                  {w.items.map(it=>(
+                    <div key={it} style={{fontSize:13,marginTop:5,color:C.soft}}>{it}</div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ══ CONTAS ══ */}
+        {tab==="contas"&&(
+          <div>
+            {sec("Contas a pagar da semana · 10h–10h30 · lembrete véspera + 10h")}
+            <div style={{padding:"10px 14px",borderRadius:8,background:C.redBg,
+              border:`1px solid ${C.red}33`,fontSize:13,color:C.red,
+              fontWeight:500,marginBottom:14}}>
+              ⚠️ Total da semana: R$ 68.550,55 + 8 DDAs BTG
+            </div>
+            {BILLS.map(b=>(
+              <div key={b.date} style={{padding:"14px 16px",borderRadius:10,marginBottom:12,
+                background:"#fff",border:`1px solid ${C.border}`,
+                borderLeft:`4px solid ${b.done?C.green:C.red}`,
+                opacity:b.done?.65:1}}>
+                <div style={{display:"flex",justifyContent:"space-between",
+                  alignItems:"baseline",flexWrap:"wrap",gap:8,marginBottom:12}}>
+                  <span style={{fontSize:13,fontWeight:700,color:b.done?C.green:C.red}}>
+                    {b.done?"✅ ":""}{b.date}
+                  </span>
+                  <span style={{fontSize:13,color:C.soft,fontFamily:"ui-monospace,monospace"}}>
+                    total {b.total}
+                  </span>
+                </div>
+                {b.items.map((it,idx)=>(
+                  <div key={idx} style={{display:"flex",justifyContent:"space-between",
+                    gap:10,padding:"7px 0",
+                    borderTop:idx?`1px solid ${C.border}`:"none",fontSize:14}}>
+                    <span>
+                      <span style={{color:C.muted,marginRight:6,fontSize:12,
+                        fontFamily:"ui-monospace,monospace"}}>{idx+1}.</span>
+                      {it[0]}
+                      <span style={{color:C.muted,fontSize:12,marginLeft:6}}>({it[2]})</span>
+                    </span>
+                    <span style={{whiteSpace:"nowrap",fontFamily:"ui-monospace,monospace",
+                      color:C.ink,fontWeight:600}}>{it[1]}</span>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ══ EQUIPE ══ */}
+        {tab==="equipe"&&(
+          <div>
+            {sec("Estrutura e divisão · setor financeiro · definida 16/06/2026")}
+            {TEAM.map(t=>(
+              <div key={t.cls} style={{background:"#fff",border:`1px solid ${C.border}`,
+                borderLeft:`4px solid ${t.border}`,borderRadius:12,
+                padding:"18px 20px",marginBottom:14}}>
+                <h3 style={{margin:0,fontSize:17,fontWeight:700,color:C.ink}}>{t.name}</h3>
+                <div style={{fontSize:12,color:C.muted,textTransform:"uppercase",
+                  letterSpacing:".05em",marginTop:2}}>{t.role}</div>
+                <span style={{display:"inline-block",fontSize:11,fontWeight:700,
+                  borderRadius:6,padding:"3px 10px",marginTop:8,
+                  background:t.scopeBg,color:t.scopeInk,
+                  border:`1px solid ${t.scopeInk}33`}}>{t.scope}</span>
+                <ul style={{listStyle:"none",padding:0,margin:"12px 0 0"}}>
+                  {t.items.map((it,idx)=>(
+                    <li key={idx} style={{fontSize:14,padding:"7px 0 7px 20px",
+                      position:"relative",borderTop:idx?`1px solid ${C.border}`:"none",
+                      lineHeight:1.5,color:C.soft}}>
+                      <span style={{position:"absolute",left:2,top:16,width:7,height:2,
+                        borderRadius:2,background:t.border,display:"block"}}/>
+                      {it.bold
+                        ?<strong style={{color:C.ink,fontWeight:600}}>{it.text}</strong>
+                        :it.text}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* FOOTER */}
+        <div style={{marginTop:30,paddingTop:16,borderTop:`1px solid ${C.border}`,
+          fontSize:12,color:C.muted,lineHeight:1.7}}>
+          <strong style={{color:C.soft}}>Fluxo:</strong> às 9h, ao abrir o Claude, o comando
+          "triagem" varre Slack (MCP), Gmail, Omie Contas a Pagar e WhatsApp Web (Chrome quando
+          disponível). Demandas classificadas 🔴🟡🟢, registradas na agenda e painel reabastecido.
+          Harysson e Kiev monitorados 100%. WhatsApp offline hoje — verificar manualmente.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<AgendaON />);
+</script>
+</body>
+</html>
